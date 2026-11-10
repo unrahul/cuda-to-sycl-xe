@@ -8,7 +8,7 @@ The runner creates a unique run directory containing `commands.txt`, source hash
 
 For another Xe device, first inspect availability and choose its index, then run this procedure without copying old tuning tables. The pure portable GEMV baseline has no subgroup requirement. Other examples are constrained candidate experiments, and unsupported paths must remain skips. `xe_probe --capabilities` only queries the device. Its full microbenchmark mode has additional graph and launch requirements.
 
-For controlled performance work, create a separate project run with the intended workload/cache regime, paired baseline/candidate samples, raw timing records and spread. This smoke runner does not select production dispatch or establish isolated performance. `scripts/make_table.py` consumes a legacy summary CSV and cannot validate device context, repeated-sample statistics or application integration.
+For controlled performance work, create a separate project run with the intended workload/cache regime, paired baseline/candidate samples, raw timing records and spread. This smoke runner does not select production dispatch or establish isolated performance; use `scripts/accept_performance.py` for paired acceptance.
 
 ## Required Xe2 DPAS checks
 

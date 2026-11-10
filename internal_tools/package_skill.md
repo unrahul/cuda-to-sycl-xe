@@ -1,7 +1,27 @@
 # Standalone skill package
 
-Build a fresh output with `python3 internal_tools/package_skill.py --output dist/cuda-to-sycl-xe`. The output directory must not already exist. The builder creates a matching ZIP archive with fixed archive timestamps and a per-file SHA-256 manifest.
+```sh
+python3 internal_tools/package_skill.py                                  # dist/build-<UTC>/cuda-to-sycl-xe + .zip
+python3 internal_tools/package_skill.py --install codex,claude,opencode  # also install
+python3 internal_tools/package_skill.py --install claude --replace       # move an existing install to *.bak-<UTC>
+```
 
-The allowlist includes the skill entrypoint, portable references, source examples, helper scripts, project template, tests and UI metadata. It excludes private source archives, hardware measurements, profiler services, binaries and Python caches. Public source URLs and pinned repository revisions remain in `references/sources.md`. The package needs a compatible SYCL compiler/runtime and an actual target device for GPU execution; it does not bundle a toolchain.
+The package contains `SKILL.md`, `references/`, `examples/` (sources only), `scripts/`, `templates/`, `tests/` and `agents/openai.yaml`. Maintainer evidence, upstream clones, measurements and binaries stay here.
 
-Run the skill validator and the package's CPU tests before installation. Use `--install` on a fresh build to copy the standalone package into the active Codex skills directory. Existing installations are never overwritten. A local installation becomes discoverable on the next turn. Keep maintainer measurement tools and archived references in this workspace.
+The build fails unless the package passes its own `tests/test_docs.py`, which checks that:
+
+- every documented code block is a compiled snippet;
+- links resolve and every reference is reachable from `SKILL.md`;
+- frontmatter and size limits hold;
+- no maintainer path or benchmark-harness wording ships.
+
+The ZIP has fixed timestamps, and `package-manifest.json` lists per-file SHA-256 hashes.
+
+Install targets are `~/.codex/skills`, `~/.claude/skills` and `~/.config/opencode/skills`. An existing install is never overwritten. `--replace` moves it aside first.
+
+Before installing a release, run on one GPU:
+
+```sh
+source /opt/intel/oneapi/setvars.sh
+ONEAPI_DEVICE_SELECTOR=level_zero:3 scripts/smoke.sh
+```
