@@ -15,7 +15,7 @@ Transliterating them produces a slow or impossible kernel. Re-express the *dataf
 - Every sub-group owns a register-resident output tile.
 - Each sub-group loads its own operand tiles straight from global memory into registers with 2D block loads, already in DPAS layout (VNNI or transposed).
 - An L1 prefetch runs a few K-steps ahead instead of a shared-memory ring.
-- Accumulators live in registers for the whole K loop, using large GRF (256 on Xe2, up to 512 on Xe3P).
+- Accumulators live in registers for the whole K loop, using large GRF (256; Xe3P can go to 512 once the compiler accepts it, see [registers](registers.md)).
 - A split barrier (arrive early, wait late) keeps the work-group's sub-groups loosely in step.
 - There are no producer roles, no shared memory for operands, and no async-copy barriers.
 
@@ -29,10 +29,10 @@ Xe-HPG lacks 2D block loads, so stage tiles through SLM or vector loads there ([
 | TMA (`cp.async.bulk.tensor`) + `mbarrier` | none | 2D block load: one sub-group, one rectangular tile, synchronous completion, so no byte-count barrier | as Xe2, plus wider transposes and 256-byte prefetch rows | Pad or align strides to the block-load rules ([memory](memory.md)) |
 | `ldmatrix` / `stmatrix` | sub-group block reads | not needed: VNNI and transposed 2D loads produce DPAS layout | as Xe2 | Delete them, and choose the matching load variant |
 | `mma.sync` (m16n8k16 ...) | DPAS at sub-group 8: M ≤ 8, N = 8 | DPAS at sub-group 16: M ≤ 8, N = 16, K = 256 bits / element width | as Xe2, plus fp8 and fp4 inputs | Cover a warp tile with several DPAS per sub-group ([GEMM](gemm.md)) |
-| `wgmma` (async, operands from shared memory) | none | none: DPAS operands live in registers; overlap comes from prefetch and other resident threads | as Xe2, with 512 GRF for larger tiles | Keep a register-resident tile per sub-group |
+| `wgmma` (async, operands from shared memory) | none | none: DPAS operands live in registers; overlap comes from prefetch and other resident threads | as Xe2, with more GRF for larger tiles | Keep a register-resident tile per sub-group |
 | Warp specialization + `setmaxnreg` | none | possible, but not used by production kernels | as Xe2 | Make sub-groups symmetric. Choose the GRF mode per kernel instead of moving registers between roles ([registers](registers.md)) |
 | Thread-block clusters + distributed shared memory | none | none | none | Use a larger work-group, or exchange through L2/global memory. Each sub-group loads its own tiles instead of multicasting |
-| `tcgen05` + tensor memory (Blackwell) | none | none | none; the closest is 512 GRF per thread | Keep accumulators in registers |
+| `tcgen05` + tensor memory (Blackwell) | none | none | none; the closest is a large GRF per thread | Keep accumulators in registers |
 | FP8 (E4M3/E5M2) GEMM | none | no FP8 DPAS: convert to fp16/bf16 in registers, then DPAS | native FP8 DPAS, any E4M3/E5M2 mix, f32 or bf16 accumulate | Gate on the target ([architectures](xe-architectures.md)) |
 | NVFP4 / MXFP4 block-scaled MMA | none | dequantize in software | block-scaled DPAS (`bdpas`, M = 8) with group-32 E8M0 scales (MX). NVFP4's group-16 E4M3 scales have no `bdpas` evidence | Formats in [quantized compute](quantized-compute.md) |
 | FlashAttention-3 ping-pong between warpgroups | none | not done: split barriers plus several resident sub-groups overlap softmax with DPAS | as Xe2 | Remove named-barrier choreography |
@@ -63,7 +63,7 @@ Xe-HPG lacks 2D block loads, so stage tiles through SLM or vector loads there ([
 
 **Xe3P.**
 
-- Same loop with `grf_size<512>`, and tiles roughly doubled (512×64×64 with 32 sub-groups for head dimension 128).
+- Same loop with the largest GRF the compiler accepts, and tiles roughly doubled (512×64×64 with 32 sub-groups for head dimension 128).
 - The FP8 path computes QKᵀ in FP8, biases the softmax exponent by +8, packs P to FP8, and folds K/V descales into the softmax scale or the output.
 - MXFP K/V use block-scaled DPAS.
 
