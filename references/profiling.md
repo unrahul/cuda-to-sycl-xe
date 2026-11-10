@@ -19,7 +19,8 @@ How to read the numbers:
 - **Achieved bandwidth** = (read + write bytes) / GPU time. Compare it with the device's memory bandwidth ([analysis](analysis.md)). Near it means bandwidth-bound and done; far below it with low `XVE_ACTIVE` usually means latency-bound or too few work-groups.
 - **Low `XVE_THREADS_OCCUPANCY_ALL`** points to registers (large GRF), SLM buckets, or too few or too small work-groups ([registers](registers.md)).
 - **`AvgGpuCoreFrequencyMHz`.** Short kernels on an idle GPU run at low clocks (about 1.2 GHz on B70 for microsecond kernels). Measure steady-state workloads, not one cold launch.
-- **Stall attribution.** `--stall-sampling` gives per-instruction stall reasons on Data Center GPU Max and later (`uniview.py` displays them).
+- **Stall attribution.** `--stall-sampling` gives per-instruction stall reasons on Data Center GPU Max (`uniview.py` displays them); on Xe3P it may return nothing.
+- **Exit normally.** `unitrace -d` writes nothing for a process that leaves with `std::_Exit` or `quick_exit`.
 
 ## VTune and Advisor
 
