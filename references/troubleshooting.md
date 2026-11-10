@@ -36,7 +36,8 @@ Match on meaning, since message wording changes between compiler releases.
 |---|---|---|
 | Script exits inside `setvars.sh` | Sourced after `set -u` (the script reads unset variables) | Source it first, then enable strict mode |
 | `sycl-ls` shows no GPU, or `ONEAPI_DEVICE_SELECTOR` selects nothing | Missing `/dev/dri` access, wrong index, or a container started without the render node | Check `sycl-ls`, the `render` group, and `--device /dev/dri/renderD*` |
-| Matrix aspect 0 on an Xe2 or Xe3P card | Stack too old: on Xe2, oneAPI 2025.3 exposes none and 2026.1 does | Use the newer compiler and runtime; do not bypass the capability gate |
+| Matrix aspect 0 on an Xe2 or Xe3P card | Stack too old: on Xe2, oneAPI 2025.3 exposes none and 2026.1 does; on Xe3P, 2026.1 exposes none | Use a newer compiler and runtime; on Xe3P, ESIMD `xmx::dpas` reaches DPAS meanwhile; do not bypass the capability gate |
+| `Unsupported GRF size` static assertion for `grf_size<512>` | oneAPI 2026.1 accepts only 128 and 256 | Use `grf_size<256>` until a newer compiler |
 | Results differ between machines with the same GPU | Different driver or compiler | Record `icpx --version`, driver version and PCI address with every result |
 
 ## Runtime
