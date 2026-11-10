@@ -37,6 +37,8 @@ This worked example is where the library-versus-fused rule in [backend selection
 - It breaks a library GEMM into a slower custom GEMM. Keep the library call and fuse only the epilogue.
 - It cuts parallelism, for example one work-group per normalization group when there are fewer groups than Xe-cores. Split statistics into partials and merge them, or use a second pass.
 - It raises register pressure until the kernel spills ([registers](registers.md)).
+- It replaces a kernel boundary with a device-scope fence and atomic counter (the last-work-group-finishes pattern). On Xe the fence pair costs more than the boundary; fold the dependent step into the next kernel instead.
+- It moves independent work to a second in-order queue hoping for overlap. Small latency-bound kernels on a second queue mostly run after the first queue's, not beside them; remove work instead.
 - It changes rounding points that the contract fixes. Algebraic rewrites must be exact or within the stated tolerance.
 
 ## Launch overhead without fusion
