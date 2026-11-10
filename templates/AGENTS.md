@@ -9,6 +9,13 @@ Replace the bracketed fields before using this template.
 - Numerical policy: [accumulation, rounding, overflow, NaN/Inf, predeclared tolerances]
 - Objective: [deployment latency/throughput and relevant workload]
 
+## Targets
+
+- Devices and stacks: [product, PCI address, driver, oneAPI version per target, e.g. Xe-HPG / Xe2 / Xe3P]
+- Generated dispatch tables: [path per device; never hand-edited]
+- Switches: [name, `0` off / `1` force on / unset follows the table; master switch for old defaults]
+- Untested targets: [list; they run the portable path]
+
 ## Commands and evidence
 
 - Build: [command, toolchain/container image and flags]
@@ -23,7 +30,7 @@ For a Bash runner, use an explicit interpreter, for example `flock -w TIMEOUT LO
 
 ## Agent workflow
 
-Read repository instructions and prefer available graph tools for discovery. Implement an independent reference and portable baseline first. Record each optimization hypothesis, validate before timing and confirm improvements with fresh interleaved measurements. Query capabilities before specializing. Preserve a supported fallback and validate the integrated dispatch.
+Implement an independent reference and portable baseline first. Record each optimization hypothesis, validate before timing and confirm improvements with fresh interleaved measurements. Query capabilities before specializing. Preserve a supported fallback and validate the integrated dispatch.
 
 Store measured results separately from reusable instructions. Specifications require exact product and source citations. Mark untested architectures and skipped paths explicitly. Do not copy tuning constants across devices based on a generation label.
 
