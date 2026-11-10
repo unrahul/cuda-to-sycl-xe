@@ -158,4 +158,3 @@ With a D270 available, run the commands at the top of `xe3p.md`; they answer mos
 | `TODO.md` | status, evaluation history, remaining work |
 | `to_check.md` | non-Xe3P facts awaiting hardware confirmation |
 | `xe3p.md` | everything the skill needs about Xe3P |
-| `internal_references/` | study material: upstream snapshots, manifests, research notes (not shipped) |
