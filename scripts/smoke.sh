@@ -12,6 +12,12 @@ printf 'selector=%s\n' "$ONEAPI_DEVICE_SELECTOR"
 timeout 180 "$root/examples/build.sh"
 timeout 60 icpx -fsycl -O2 -std=c++20 -I "$root/examples/common" "$root/tests/parity_test.cpp" -o "$root/examples/bin/parity_test"
 timeout 30 "$root/examples/bin/parity_test"
+timeout 120 icpx -fsycl -O2 -std=c++20 -I "$root/examples" "$root/tests/snippets_test.cpp" -o "$root/examples/bin/snippets_test"
+timeout 60 "$root/examples/bin/snippets_test"
+timeout 120 icpx -fsycl -O2 -std=c++20 -I "$root/examples" -Xspirv-translator -spirv-ext=+SPV_INTEL_2d_block_io \
+    "$root/tests/block2d_test.cpp" -o "$root/examples/bin/block2d_test"
+set +e; timeout 60 "$root/examples/bin/block2d_test"; status=$?; set -e
+[[ $status == 0 || $status == 77 ]] || { echo "block2d_test failed: $status" >&2; exit 1; }
 timeout 60 "$root/examples/bin/portable_gemv"
 timeout 60 "$root/examples/bin/silu_mul" 3 67
 timeout 120 "$root/examples/bin/gemv_q8" 32 257
