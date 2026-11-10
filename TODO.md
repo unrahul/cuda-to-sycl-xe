@@ -1,35 +1,104 @@
-# Validation status and remaining coverage
+# Status and remaining work
 
-Reusable instructions contain methods and sourced specifications. Measured values belong to device-specific evidence under `validation/`, never to architecture-wide defaults. Original supplied claims, including prior Xe3P execution claims, are archived in `internal_references/original/`; they have not been independently reproduced here.
+The skill is maintained in git. `SKILL.md`, `references/`, `examples/`, `scripts/`, `templates/` and `tests/` ship; everything else is maintainer material. Build and install with `internal_tools/package_skill.py` (see `internal_tools/package_skill.md`).
 
-Fresh B70 results and exact limitations are recorded in [the verification report](validation/REPORT.md).
+## 2026-11-10 rewrite
 
-## Current repair
+The paired Haiku pilot (6 of 8 pairs, stopped by expired authentication) showed no benefit from the previous version:
 
-The session audit found incomplete compiler feedback, implicit assessment restrictions and missing framework integration examples. The revised entrypoint routes by task, and the new examples cover named-kernel PyTorch integration plus oneMKL and oneDNN. Component checks and limitations are recorded in `validation/lean-release-20261110/`. No improved agent benchmark score is claimed.
+| | Control | With skill |
+|---|---|---|
+| Correct | 5 | 5 |
+| Faster than baseline | 5 | 4 |
+| At least 2x faster | 3 | 3 |
+| Cost | $3.48 | $5.00 |
 
-The revised managed interface is in `benchmarks/xe-skill-pilot/repair/`. It supplies the same exact contract and free policy validation to both arms, captures compiler output and distinguishes runtime errors. Frozen pilot inputs and results remain unchanged.
+Most failures were practical: a forced `-std=c++17`, unnamed kernels under PyTorch's `-fsycl-host-compiler`, `-lonemkl`, and policy rejections from the harness. The fixes:
 
-## Earlier component qualification
+- **Rewritten docs.** `SKILL.md` now opens with a quick start, the costly errors and routing. The references now state facts and code instead of repeated cautions.
+- **New `references/troubleshooting.md`.** Its rows come from pilot logs and from reproductions on B70.
+- **Compiled code blocks.** Every code block is a region in `examples/snippets/`, run on B70 by `tests/snippets_test.cpp`. `tests/test_docs.py` keeps the docs and code in sync.
+- **Per-generation facts.** Xe-HPG, Xe2 and Xe3P facts are labeled [B70] (measured here), [spec] or [report] (original author, not reproduced).
+- **Rules restored.** The original failure-named kernel rules are back, with overstated performance claims reworded as hypotheses.
+- **Verified on B70.** `-qmkl` links on 2025.3.3 and 2026.1, while `-qmkl=sycl` fails on 2025.3.3. `icpx` contracts FMAs in device code even with `-fp-model=precise`. `TORCH_XPU_ARCH_LIST` selects PyTorch's AOT targets.
+- **Removed.** Harness wording and maintainer paths are gone from shipped text. Maintainer evidence moved to `internal_references/`. `make_table.py` was removed; `accept_performance.py` is the gate.
 
-Three skill-only agent workflows, a standalone-package exercise, independent evidence review, a context/statistics acceptance tool and clean local installation are complete for the recorded B70 scope. See [the evaluation summary](validation/agent-evals-20261108/summary.md). Remaining hardware/application coverage below is explicitly outside that release qualification.
+## Patterns from upstream (2026-11-10)
 
-The subsequent [community-tool evaluation](validation/skill-optimization-20261108/REPORT.md) preserves mixed initial agent results and focused knowledge checks. Its original grades, corrected publication evidence and feedback-assisted test repairs have separate labels. The Luna campaign and Opus pilot were stopped at the user's request. The Haiku pilot completed six of eight pairs before authentication expired. Its [session audit](validation/skill-session-audit-20261110/REPORT.md) identifies the defects addressed by the current repair. A fresh paired evaluation is still needed to establish agent improvement.
+I mined llama.cpp `ggml-sycl`, torch-xpu-ops, vllm-xpu-kernels, sgl-kernel-xpu, llm-scaler, sycl-tla and SyclKittens, and added six compiled patterns. All of them pass on B70 with oneAPI 2025.3.3 and 2026.1.1:
 
-## Current scope
+- alignment-checked vector width;
+- sub-group width found by searching the device list;
+- Q4_0 reorder with a one-sub-group-per-row GEMV;
+- MoE top-k;
+- a gated bf16 `joint_matrix` GEMM (the Xe-HPG instantiation is AOT-compiled for `acm-g10`, not run);
+- the SPIR-V 2D block load, whose out-of-surface reads were measured as zero.
 
-The package supports conversion planning for CUDA and ROCm/HIP, new portable SYCL kernels, capability-gated optimization, host reference validation and evidence collection. The executable examples cover SiLU multiplication and a specific int8 block GEMV format. They are not a general framework migration suite.
+The Xe3P code paths in the libraries are documented with their sources. None of the libraries supports Xe-HPG.
 
-Use `internal_tools/run_evidence.sh` after choosing one GPU and configuring the toolchain. The runner stores selected-device and compiler provenance, logs and exit status separately from the skill. Read the latest run record before making a hardware claim.
+## L2_030 recheck with Codex gpt-6-luna (high), 2026-11-10
 
-## Coverage gaps
+This task regressed most with the old skill: Haiku scored 0.44x with the skill versus 1.04x for control. Runs: `benchmarks/xe-skill-pilot/runs/dev-codex-l2_030-*`.
 
-- Xe-LP, Xe-HPG, Xe-HPC, Xe3 and Xe3P have no fresh execution evidence in this session. Run inventory, portable baseline and supported feature probes when those devices become available.
-- The signed-int8 DPAS example is now qualified on B70 cards 0 and 1 with oneAPI 2026.1. See [the DPAS report](validation/DPAS_REPORT.md). Other matrix types, tiles and stacks need independent qualification.
-- CUDA and HIP source-device comparisons need corresponding hardware/toolchains and representative source kernels. CPU oracle checks alone do not establish an executed cross-vendor comparison.
-- Full dtype, shape, stride and exceptional-value coverage is operation-specific. Supplied smoke cases do not prove arbitrary kernels correct.
-- Device-specific AOT, graph, 2D message, GRF and sanitizer paths require separate build/run qualification on the installed stack.
-- Smoke timing is diagnostic. No isolated speedup, bandwidth, TOPS or optimal dispatch claim follows from these runs.
-- Whole-model numerical fidelity and deployment latency remain the integrating project's responsibility. TensorFold-style layer checks can complement kernel tests but sampled layers/rows are not complete model coverage.
+| Arm | Assessments used | Builds that failed | Fresh final |
+|---|---|---|---|
+| Skill (new package) | 3 | 1 | correct, 1.042x |
+| Control | 6 | 6 | no correct result |
 
-For a new target, keep existing results intact, create a separate run directory, record unsupported paths as SKIP and failures as FAIL, and retain the portable fallback. Only promote tuning choices after repeated correctness and controlled performance measurements on that target.
+- **Skill arm.** It followed the tested oneMKL example with `-qmkl`, a named kernel and a `.sycl` source. Its one failure was `auto&` bound to the by-value `getCurrentXPUStream()` result; the docs now say this explicitly. It stopped near the ceiling instead of spending its remaining attempts.
+- **Control arm.** Every failure is a pitfall the skill covers: a `.cpp` source (three times), `-lonemkl`, and hand-written MKL link lines that failed to load (twice).
+- **Ceiling.** The strict-FP32 GEMM runs at about 21 TFLOP/s and dominates the time, so about 1.05x is the cap. `playbook.md` now teaches this headroom check. Large wins should be judged on fusion-heavy tasks such as L2_085 and L2_074.
+
+## Restructure and paired holdout evaluation (2026-11-10)
+
+The skill was reorganized into topic modules:
+
+- analysis (roofline, headroom, doing less work);
+- memory;
+- registers (spills, GRF, occupancy);
+- fusion;
+- GEMM/XMX;
+- profiling.
+
+Every fact has one home, enforced by `tests/test_docs.py`. Sources: the JAX scaling book, Intel's GPU optimization guide, IGC and compute-runtime master, Intel papers, and upstream kernel repositories. Unverified Xe3P facts are listed in `to_check.md`.
+
+**Method.** Codex `gpt-6-luna` at high effort, skill versus control, one run per arm, on tasks never used to develop the skill. Each task ran on its own GPU lane (renderD128–130), with both arms on the same GPU. Run with `benchmarks/xe-skill-pilot/dev_campaign.sh`; summarize with `dev_compare.py`; logs are in `runs/dev-logs/`.
+
+| Holdout | Package | Skill correct | Control correct | Skill better / control better | Failed builds (S/C) |
+|---|---|---|---|---|---|
+| 1 (L2_025, L1_042, L2_096, L2_080, L2_014, L2_019) | build-20261110T192839Z | 3/6 | 2/6 | 3 / 1 | 1 / 5 |
+| 2 (L2_012, L2_066, L2_070, L1_068, L1_071, L1_091) | build-20261110T195250Z | 6/6 | 3/6 | 4 / 2 | 0 / 14 |
+
+Notable results:
+
+| Task | Skill | Control | What happened |
+|---|---|---|---|
+| L2_080 | 4.91x | none | Skill agent found the output is identically zero |
+| L1_042 | 4.45x | 1.25x | |
+| L2_025 | 2.96x | none | |
+| L1_071 | 1.31x | 0.31x | |
+| L1_091 | 1.55x | 2.54x | Skill agent stopped early |
+
+Across all 12 tasks: correct 9 vs 5, faster than baseline 6 vs 4, failed builds 1 vs 19.
+
+**Fixes taken from these runs.** Each fix came from a failure in a holdout run, so those tasks are now development tasks for later versions:
+
+- `load()` source paths (L2_019);
+- hyperparameter binding (L2_096);
+- FP32 tolerance on long reductions (L2_014);
+- the oneDNN 3.x API and deconvolution weight layout (L2_025, L1_068), verified on B70;
+- the "doing less work" lever (L2_014);
+- host-container capture in kernels (L1_068);
+- the continue-or-stop rule (L1_091).
+
+Holdout 3 uses the last four untouched tasks: L1_002, L1_005, L1_021 and L1_038.
+
+## Remaining
+
+0. **CUDA-source conversion evaluation (the skill's primary job, not yet measured).** The holdouts give the agent a PyTorch model, which measures optimization, not CUDA translation. Plan:
+   - **Tasks.** Each task is a PyTorch reference module plus a real CUDA implementation the agent must port. Candidates: NVIDIA cuda-samples (reduction, transpose, scan, histogram; BSD), llama.cpp `ggml-cuda` kernels with exact PyTorch semantics (softmax with scale/mask, RMSNorm, RoPE-NeoX; MIT), and one Hopper-style kernel using `cp.async` or `mma.sync` to exercise `references/cuda-modern-idioms.md`.
+   - **Harness.** Stage the tasks in a dev sample next to the frozen one, with `dev_adapter.py` patching the controller's `SAMPLE`, `SAMPLE_SHA256` and `TASKS`. `dev_episode.py` copies `cuda/*.cu` read-only into the workdir and appends "Port the supplied CUDA implementation" to the prompt.
+   - **Metrics.** Correctness first, then speed against the PyTorch XPU baseline. Also check whether the port preserved the CUDA algorithm where that was the right call.
+1. **Larger paired evaluation.** The 12-task result is one run per arm. Repeat with at least three runs per arm on new task sets, and with a second model, before claiming a general effect. All 24 pilot tasks have now been seen, so new tasks are needed, for example more KernelBench L2/L3 tasks staged into the evaluator.
+2. **Hardware coverage.** Run the probe, `scripts/smoke.sh` and `tests/snippets_test.cpp` on Xe-HPG and Xe3P hardware, then turn [report] rows in `references/xe-architectures.md` into measured ones.
+3. **CUDA/HIP source-device comparison.** This needs NVIDIA/AMD hardware; until then, ports are validated against host references only.
