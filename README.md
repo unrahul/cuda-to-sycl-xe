@@ -125,28 +125,42 @@ benchmarks/xe-skill-pilot/dev_campaign.sh <package> <tag> renderD128:TASK,... re
 benchmarks/xe-skill-pilot/dev_compare.py TASK ...
 ```
 
-## Xe3P: details still needed
+## Xe3P (D270)
 
-No Xe3P hardware has been available. The skill states Xe3P values from Intel documentation and driver sources.
+D270 is pre-production hardware, so this repository records its capabilities and limits, not its performance. [`xe3p.md`](xe3p.md) is the single file for Xe3P. Each row gives the value, its source, its status and how to check it.
 
-**Where to put new details:** [`xe3p.md`](xe3p.md) is the single file for Xe3P. Each row has the value in use, its source, its status and the check that confirms it. Add each value there; I will carry it into the skill pages named in the row.
+**Checked on a D270** (oneAPI 2026.1, compute runtime 26.44.40863):
 
-**Values to obtain or confirm,** in priority order:
+| Item | Value |
+|---|---|
+| Device id; AOT target | `0x674C`; `-device cri` |
+| Architecture enum | not named by oneAPI 2026.1; detected through the device id |
+| Vector engines | 256 (4 slices × 8 sub-slices × 8); `max_compute_units` counts these, not Xe-cores |
+| Sub-group sizes | 16, 32 |
+| Max work-group | 1024 |
+| Threads per vector engine | 8 at 128 and at 256 GRF |
+| `grf_size<512>` | rejected by oneAPI 2026.1 (static assertion) |
+| Local memory per work-group | 384 KB |
+| L2; cache line | 32 MB; 256 bytes |
+| Aspects | fp16, fp64, atomic64 |
+| Matrix aspect / `joint_matrix` combinations | 0 / none on oneAPI 2026.1 |
+| DPAS through ESIMD and vISA | bf16, fp16 and int8 with depth 8, sub-group 16, N = 16 |
+| 2D block loads | Xe2 forms run; reads outside the surface return zero; base 64-byte aligned, pitch a multiple of 16 bytes |
+| ESIMD | `xmx::dpas`, SLM block load and store, `block_load`, gathers and barriers run |
+| Clock range | 400–2500 MHz |
 
-1. **Threads per vector engine at 256 GRF:** 4 or 8. The compiler and runtime disagree. Also whether the default GRF ceiling is 512.
-2. **SLM per work-group:** 384 KB (runtime) versus 512 KB L1+SLM per Xe-core.
-3. **DPAS:**
-   - systolic depth: 8 or 16;
-   - supported types and shapes, as `matrix_combinations` reports them;
-   - fp8 and e2m1 support;
-   - block-scaled DPAS with group-32 E8M0 scales;
-   - whether NVFP4 (group-16 E4M3 scales) has a native path.
-4. **Peak rates for the D270 SKU:** FP32 vector, FP16/BF16 XMX, FP8, INT8 and FP64, plus memory bandwidth, L2 size and clock.
-5. **2D block loads:** the transpose and prefetch limits, and whether reads outside the surface return zero.
-6. **Toolchain:** the oneAPI version that names `intel_gpu_cri`, and oneMKL/oneDNN coverage.
-7. **Behavior:** ESIMD differences from Xe2, and early-silicon fault patterns.
+**Still to obtain or confirm** (enter values in `xe3p.md`):
 
-With a D270 available, run the commands at the top of `xe3p.md`; they answer most of these directly.
+1. **512-register kernels:** the default GRF ceiling and threads per vector engine at 512, with a compiler that accepts `grf_size<512>`.
+2. **DPAS:**
+   - whether the array is 16 deep;
+   - what `matrix_combinations` reports on oneAPI 2026.2 or later;
+   - fp8 and e2m1 support, block-scaled DPAS with group-32 E8M0 scales, and whether NVFP4 (group-16 E4M3 scales) has a native path.
+3. **Published SKU figures:** peak FP32, FP16/BF16 XMX, FP8, INT8 and FP64 rates, and memory bandwidth.
+4. **2D block loads:** the Xe3P-only widths (transposed 32-bit width 16, 64-bit elements) and the prefetch limits.
+5. **Toolchain:** the oneAPI version that names `intel_gpu_cri`, and oneMKL/oneDNN coverage.
+
+On a D270, start with the commands at the top of `xe3p.md`.
 
 ## Repository layout
 
