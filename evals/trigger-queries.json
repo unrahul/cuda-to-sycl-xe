@@ -1,0 +1,22 @@
+[
+  {"query": "Port this CUDA kernel (attached reduce.cu) to SYCL so it runs on our Arc Pro B70", "should_trigger": true},
+  {"query": "convert the hip kernels in src/hip/ to sycl for intel gpus", "should_trigger": true},
+  {"query": "my icpx -fsycl build fails with 'unnamed type (lambda at ...) is invalid' when loading the torch extension", "should_trigger": true},
+  {"query": "write a PyTorch XPU custom op in SYCL for fused bias + GELU", "should_trigger": true},
+  {"query": "how do I use joint_matrix DPAS for an int8 GEMV on Battlemage", "should_trigger": true},
+  {"query": "our SYCL softmax is slow on the D270, help me optimize it", "should_trigger": true},
+  {"query": "replace __shfl_xor_sync warp reduction with the sycl sub-group equivalent", "should_trigger": true},
+  {"query": "UR_RESULT_ERROR_OUT_OF_RESOURCES when launching my kernel with work-group 1024 on Arc", "should_trigger": true},
+  {"query": "link oneMKL gemm from a SYCL extension, getting cannot find -lonemkl", "should_trigger": true},
+  {"query": "make this kernel work on both Arc A770 and B580 with one source", "should_trigger": true},
+  {"query": "Port our PyTorch training script from CUDA to XPU device strings", "should_trigger": false},
+  {"query": "set up vLLM serving on Intel GPUs with tensor parallel 2", "should_trigger": false},
+  {"query": "write a CUDA kernel for matrix transpose on an H100", "should_trigger": false},
+  {"query": "optimize this Triton kernel for AMD MI300", "should_trigger": false},
+  {"query": "install the Intel GPU driver on Ubuntu 24.04", "should_trigger": false},
+  {"query": "benchmark llama.cpp tokens per second on my Arc card", "should_trigger": false},
+  {"query": "explain the difference between OpenCL and Vulkan compute", "should_trigger": false},
+  {"query": "write an OpenMP offload loop for a CPU cluster", "should_trigger": false},
+  {"query": "quantize this model to GGUF Q4_K_M", "should_trigger": false},
+  {"query": "fix the failing pytest in our Flask app", "should_trigger": false}
+]

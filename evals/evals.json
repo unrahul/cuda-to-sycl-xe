@@ -1,0 +1,75 @@
+{
+  "skill_name": "cuda-to-sycl-xe",
+  "evals": [
+    {
+      "id": 0,
+      "name": "torch-extension-first-build",
+      "prompt": "Write a PyTorch XPU extension in SYCL that computes y = gelu(x + bias) for contiguous FP32 tensors (bias broadcast over the last dimension), load it with torch.utils.cpp_extension.load, and verify it against torch on xpu:0. Report how many build attempts it took.",
+      "expectations": [
+        "The first build attempt compiles and links.",
+        "Every kernel has a name declared at namespace scope; no -std flag is forced.",
+        "The kernel runs on c10::xpu::getCurrentXPUStream(...).queue() under a DeviceGuard, and inputs are validated with TORCH_CHECK.",
+        "Results match an FP64 or torch reference on several shapes, including a non-multiple of the work-group size."
+      ],
+      "expected_output": "Extension source, loader call, check script, and its output."
+    },
+    {
+      "id": 1,
+      "name": "onemkl-link",
+      "prompt": "Implement FP32 C = A @ B for 2-D XPU tensors with oneMKL from a SYCL PyTorch extension, and check it against an FP64 host reference.",
+      "expectations": [
+        "Links with -qmkl through icpx; never tries -lonemkl.",
+        "Uses row_major gemm with correct leading dimensions and compute_mode::standard (or states the precision mode).",
+        "Waits or otherwise keeps tensors alive until completion."
+      ],
+      "expected_output": "Extension source, link flags, check output."
+    },
+    {
+      "id": 2,
+      "name": "cuda-warp-port",
+      "prompt": "Port the attached CUDA kernel that computes a masked row max with __ballot_sync and __shfl_down_sync (one warp per row) to SYCL for Intel Xe, validate it against a host reference including rows shorter than 32 and fully masked rows.",
+      "files": ["fixtures/masked_rowmax.cu"],
+      "expectations": [
+        "Does not hard-code a 32-wide sub-group without checking sub_group_sizes, or keeps 32 explicitly for parity and explains it.",
+        "Inactive lanes contribute an identity value instead of skipping the collective.",
+        "Tests short rows, fully masked rows, NaN policy, and tails."
+      ],
+      "expected_output": "SYCL source, test program, and results."
+    },
+    {
+      "id": 3,
+      "name": "dpas-gated-gemv",
+      "prompt": "Add an int8 GEMV path that uses joint_matrix (DPAS) on Xe2 and Xe3P when the device supports it, with a portable fallback, and show which path ran on this machine.",
+      "expectations": [
+        "Gates on matrix_combinations (types, M range, N, K), not on the device name or matrix aspect alone.",
+        "Uses sub-group 16 and N 16, K 32 for int8 on Xe2/Xe3P; documents the Xe-HPG difference (sub-group 8, N 8).",
+        "Reports SKIP rather than PASS when the matrix path is unavailable, and the fallback is tested.",
+        "Integer results are exact against a wide-integer host reference."
+      ],
+      "expected_output": "Source, tests, and which path ran with the compiler version."
+    },
+    {
+      "id": 4,
+      "name": "fused-norm",
+      "prompt": "Fuse RMSNorm with a per-channel scale into one SYCL kernel for FP32 rows of length 4096 and 5120 on xpu, compare with the unfused PyTorch version for correctness and time.",
+      "expectations": [
+        "One work-group per row, reduction in registers plus a group reduction, no second pass over memory.",
+        "Per-element tolerance against FP64; timing separates warm-up and reports device or wall scope.",
+        "Interleaved baseline/candidate timing with raw samples."
+      ],
+      "expected_output": "Kernel, test, timing table with method."
+    },
+    {
+      "id": 5,
+      "name": "out-of-resources",
+      "prompt": "This SYCL kernel throws UR_RESULT_ERROR_OUT_OF_RESOURCES when launched with a work-group of 1024 (attached). Find why and fix it without changing results.",
+      "files": ["fixtures/big_private_array.cpp"],
+      "expectations": [
+        "Queries the kernel-specific work-group limit instead of the device maximum.",
+        "Identifies register/private-array or local-memory pressure and reduces it or lowers the work-group size.",
+        "Shows the fixed kernel produces identical results."
+      ],
+      "expected_output": "Diagnosis, fixed source, verification output."
+    }
+  ]
+}
