@@ -1,0 +1,15 @@
+# Heavy or generated artifacts stay on disk but out of version control.
+/benchmarks/kernelbench-xe2/
+/benchmarks/xe-skill-pilot/runs/
+/benchmarks/xe-skill-pilot/evaluator/
+/dist/
+/internal_references/upstream/
+/internal_references/docs/
+/validation/
+/examples/bin/
+__pycache__/
+*.pyc
+.torch_extensions/
+*.so
+*.o
+*.ninja_*

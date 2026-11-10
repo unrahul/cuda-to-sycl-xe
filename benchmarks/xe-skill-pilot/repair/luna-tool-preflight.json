@@ -1,0 +1,14 @@
+{
+  "exit": 0,
+  "markers": {
+    "spawn_agent": true,
+    "collaboration": true,
+    "web_search": false,
+    "skill-creator": false,
+    "openai-docs": false,
+    "/home/rahul/Coding/cuda-to-sycl-xe": false
+  },
+  "config": "approval_policy=\"never\"\nweb_search=\"disabled\"\n[skills.bundled]\nenabled=false\n[skills]\ninclude_instructions=false\n[features]\napps=false\nplugins=false\nhooks=false\nbrowser_use=false\ncomputer_use=false\nmemories=false\nmulti_agent=false\nmulti_agent_v2=false\nimage_generation=false\nskill_mcp_dependency_install=false\nskip_host_skill_discovery=true\ncode_mode_host=false\ncode_mode=false\nskill_search=false\ntool_suggest=false\nsleep_tool=false\nview_image=false\n",
+  "base": "/tmp/xe-luna-tools-648wnlpj",
+  "workdir": "/tmp/xe-luna-tools-648wnlpj/work"
+}

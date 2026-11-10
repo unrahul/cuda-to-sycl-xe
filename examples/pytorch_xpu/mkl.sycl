@@ -1,0 +1,18 @@
+#include "common.hpp"
+#include <oneapi/mkl/blas.hpp>
+
+at::Tensor run(const at::Tensor& a, const at::Tensor& b) {
+  check_matmul(a, b);
+  c10::DeviceGuard guard(a.device());
+  auto& q = current_queue(a);
+  const auto m = a.size(0), k = a.size(1), n = b.size(1);
+  auto c = at::empty({m, n}, a.options());
+  oneapi::mkl::blas::row_major::gemm(q,
+      oneapi::mkl::transpose::nontrans, oneapi::mkl::transpose::nontrans,
+      m, n, k, 1.0f, a.data_ptr<float>(), k, b.data_ptr<float>(), n,
+      0.0f, c.data_ptr<float>(), n, oneapi::mkl::blas::compute_mode::standard);
+  q.wait_and_throw(); // Keep tensors alive and surface asynchronous failures.
+  return c;
+}
+
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) { m.def("run", &run); }

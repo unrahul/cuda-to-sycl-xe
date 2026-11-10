@@ -1,0 +1,24 @@
+#include "common.hpp"
+
+class AffineKernel;
+
+at::Tensor run(const at::Tensor& x) {
+  check_tensor(x);
+  c10::DeviceGuard guard(x.device());
+  auto& q = current_queue(x);
+  auto y = at::empty_like(x);
+  const auto n = x.numel();
+  if (n) {
+    const float* src = x.data_ptr<float>();
+    float* dst = y.data_ptr<float>();
+    q.parallel_for<AffineKernel>(sycl::range<1>(n), [=](sycl::id<1> i) {
+      dst[i] = 2.0f * src[i] + 1.0f;
+    });
+  }
+  // Completion keeps raw-pointer storage alive, including temporary inputs.
+  // This teaching baseline deliberately pays host synchronization overhead.
+  q.wait_and_throw();
+  return y;
+}
+
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) { m.def("run", &run); }

@@ -1,0 +1,35 @@
+#include "common.hpp"
+#include <oneapi/dnnl/dnnl_sycl.hpp>
+#if DNNL_GPU_RUNTIME != DNNL_RUNTIME_SYCL
+#error "Use a oneDNN SDK built with the SYCL GPU runtime"
+#endif
+
+at::Tensor run(const at::Tensor& a, const at::Tensor& b) {
+  check_matmul(a, b);
+  c10::DeviceGuard guard(a.device());
+  auto& q = current_queue(a);
+  const auto m = a.size(0), k = a.size(1), n = b.size(1);
+  auto c = at::empty({m, n}, a.options());
+  auto engine = dnnl::sycl_interop::make_engine(q.get_device(), q.get_context());
+  auto stream = dnnl::sycl_interop::make_stream(engine, q);
+  using memory = dnnl::memory;
+  const auto fp32 = memory::data_type::f32;
+  auto ad = memory::desc({m, k}, fp32, memory::format_tag::ab);
+  auto bd = memory::desc({k, n}, fp32, memory::format_tag::ab);
+  auto cd = memory::desc({m, n}, fp32, memory::format_tag::ab);
+  dnnl::primitive_attr attr;
+  attr.set_fpmath_mode(dnnl::fpmath_mode::strict);
+  auto pd = dnnl::matmul::primitive_desc(engine, ad, bd, cd, attr);
+  auto primitive = dnnl::matmul(pd);
+  auto wrap = [&](const memory::desc& desc, const at::Tensor& tensor) {
+    return dnnl::sycl_interop::make_memory(desc, engine,
+        dnnl::sycl_interop::memory_kind::usm, tensor.data_ptr<float>());
+  };
+  auto am = wrap(ad, a), bm = wrap(bd, b), cm = wrap(cd, c);
+  dnnl::sycl_interop::execute(primitive, stream,
+      {{DNNL_ARG_SRC, am}, {DNNL_ARG_WEIGHTS, bm}, {DNNL_ARG_DST, cm}});
+  q.wait_and_throw(); // Own primitive, memory wrappers and tensors to completion.
+  return c;
+}
+
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) { m.def("run", &run); }

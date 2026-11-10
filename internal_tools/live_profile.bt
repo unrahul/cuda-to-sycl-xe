@@ -1,0 +1,71 @@
+// Host syscall time for the single PID passed as script argument.
+// No per-event output; all maps are scalar or bounded histograms.
+BEGIN
+{
+  printf("PROFILE_PID %d\n", $1);
+}
+
+tracepoint:syscalls:sys_enter_ioctl /pid == $1/
+{
+  @ioctl_start[tid] = nsecs;
+  @ioctl_drm[tid] = ((args->cmd >> 8) & 255) == 100;
+}
+tracepoint:syscalls:sys_exit_ioctl /pid == $1 && has_key(@ioctl_start, tid)/
+{
+  $ns = nsecs - @ioctl_start[tid];
+  @host_ioctl_count = count();
+  @host_ioctl_ns = sum($ns);
+  if (@ioctl_drm[tid]) {
+    @host_drm_ioctl_count = count();
+    @host_drm_ioctl_ns = sum($ns);
+    @host_drm_ioctl_us_hist = hist($ns / 1000);
+  }
+  delete(@ioctl_start[tid]);
+  delete(@ioctl_drm[tid]);
+}
+
+tracepoint:syscalls:sys_enter_futex /pid == $1/ { @futex_start[tid] = nsecs; }
+tracepoint:syscalls:sys_exit_futex /pid == $1 && has_key(@futex_start, tid)/
+{
+  @host_futex_count = count();
+  @host_futex_ns = sum(nsecs - @futex_start[tid]);
+  delete(@futex_start[tid]);
+}
+
+tracepoint:syscalls:sys_enter_poll /pid == $1/ { @poll_start[tid] = nsecs; }
+tracepoint:syscalls:sys_exit_poll /pid == $1 && has_key(@poll_start, tid)/
+{
+  @host_poll_count = count();
+  @host_poll_ns = sum(nsecs - @poll_start[tid]);
+  delete(@poll_start[tid]);
+}
+
+tracepoint:syscalls:sys_enter_ppoll /pid == $1/ { @ppoll_start[tid] = nsecs; }
+tracepoint:syscalls:sys_exit_ppoll /pid == $1 && has_key(@ppoll_start, tid)/
+{
+  @host_ppoll_count = count();
+  @host_ppoll_ns = sum(nsecs - @ppoll_start[tid]);
+  delete(@ppoll_start[tid]);
+}
+
+tracepoint:syscalls:sys_enter_epoll_wait /pid == $1/ { @epoll_start[tid] = nsecs; }
+tracepoint:syscalls:sys_exit_epoll_wait /pid == $1 && has_key(@epoll_start, tid)/
+{
+  @host_epoll_wait_count = count();
+  @host_epoll_wait_ns = sum(nsecs - @epoll_start[tid]);
+  delete(@epoll_start[tid]);
+}
+
+tracepoint:syscalls:sys_enter_exit_group /pid == $1/
+{
+  @target_exit_code = args->error_code;
+}
+
+interval:s:1
+{
+  printf("SNAPSHOT monotonic_ns=%llu\n", nsecs);
+  print(@host_drm_ioctl_count);
+  print(@host_drm_ioctl_ns);
+  print(@host_futex_count);
+  print(@host_futex_ns);
+}

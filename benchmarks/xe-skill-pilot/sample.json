@@ -1,0 +1,230 @@
+{
+  "frozen_utc": "2026-11-09T19:55:04.271297+00:00",
+  "upstream": "ScalingIntelligence/KernelBench",
+  "commit": "423217d9fda91e0c2d67e4a43bf62f96f6d104f1",
+  "eligible_pool": "all100L1 and100L2 tasks; whole-modelL3/L4 outside declared kernel-level pilot scope",
+  "pool_manifest_sha256": "e5b4867451853168147c8d8a44cff347d2cb6563cd8e0ab998380dce3904b002",
+  "sampling": "Within each level sort by SHA256(seed_hex + slash + task_id), take first12. No operator filters or replacement.",
+  "seed_hex": "df813894b77697deb2626e240d403f3e",
+  "count": 24,
+  "preserve_original_sources_shapes_dtypes": true,
+  "failures_remain_in_denominator": true,
+  "selected": [
+    {
+      "id": "L1_056",
+      "level": 1,
+      "problem_id": 56,
+      "filename": "56_conv_standard_2D__asymmetric_input__asymmetric_kernel.py",
+      "relative_path": "level1/56_conv_standard_2D__asymmetric_input__asymmetric_kernel.py",
+      "sha256": "c04ef3c4088981e9d3547eed0a0620e8ede3d0af4bff935e4a3e7ba9ba9aa652",
+      "sampling_rank_sha256": "03b537ecd47d1c327f11305afa0e1313b6b01be7ce09c9df898513339ff9c781"
+    },
+    {
+      "id": "L1_084",
+      "level": 1,
+      "problem_id": 84,
+      "filename": "84_conv_depthwise_2D_asymmetric_input_square_kernel.py",
+      "relative_path": "level1/84_conv_depthwise_2D_asymmetric_input_square_kernel.py",
+      "sha256": "1af31dab803ef4f4e5b94f7bbe54260ef23930715610d1cbd8e7cdcd88e5c45c",
+      "sampling_rank_sha256": "053cd28f7667b84d41819778fd52c7ae718a5a2f9892bc68388bf431c0cc236f"
+    },
+    {
+      "id": "L1_068",
+      "level": 1,
+      "problem_id": 68,
+      "filename": "68_conv_transposed_3D__square_input__asymmetric_kernel.py",
+      "relative_path": "level1/68_conv_transposed_3D__square_input__asymmetric_kernel.py",
+      "sha256": "eb318ee386ec2d3581938f4099366a8872936949104eabe312ec325ffdc0abbc",
+      "sampling_rank_sha256": "05d58571d795efe3a715fda652dec52426e31ef9eceac8595735c3c50927c44a"
+    },
+    {
+      "id": "L1_071",
+      "level": 1,
+      "problem_id": 71,
+      "filename": "71_conv_transposed_2D__asymmetric_input__square_kernel.py",
+      "relative_path": "level1/71_conv_transposed_2D__asymmetric_input__square_kernel.py",
+      "sha256": "02bb0b2e7744eb4c7d6576e135400b03da21efa4b999cef2ab4e5a44f49fd295",
+      "sampling_rank_sha256": "066cc7701bbd5db7448fccc9d130ecc20df57bb1394d67794ddf678f4aea20c4"
+    },
+    {
+      "id": "L1_021",
+      "level": 1,
+      "problem_id": 21,
+      "filename": "21_Sigmoid.py",
+      "relative_path": "level1/21_Sigmoid.py",
+      "sha256": "8f3ae78284ddd70b5c2fff66e066e967780245dee262fbf8cd2432498833796a",
+      "sampling_rank_sha256": "0750b44d9a588450ee7aa37ff8bf34d32b6c3c4381b7f331ee4c7c427afbd056"
+    },
+    {
+      "id": "L1_011",
+      "level": 1,
+      "problem_id": 11,
+      "filename": "11_4D_tensor_matrix_multiplication.py",
+      "relative_path": "level1/11_4D_tensor_matrix_multiplication.py",
+      "sha256": "f4e0b2e7721b68c8cf3d7109ae24690b0761eb01c79601f4330bbeffe8471bc8",
+      "sampling_rank_sha256": "0b7054d7ea176fe45160f71f4f470bacd6ac6ce2e1bfc4c81c19337714f75022"
+    },
+    {
+      "id": "L1_091",
+      "level": 1,
+      "problem_id": 91,
+      "filename": "91_cumsum_reverse.py",
+      "relative_path": "level1/91_cumsum_reverse.py",
+      "sha256": "170f4bb30f01abdec9b149d78a816e66bdc93967253ade8244dca1b8372038fd",
+      "sampling_rank_sha256": "0bd0f6f3c90b645f7638f07e3bae61d10f368dfca4a3e84e51afa7c9e136f587"
+    },
+    {
+      "id": "L1_038",
+      "level": 1,
+      "problem_id": 38,
+      "filename": "38_L1Norm_.py",
+      "relative_path": "level1/38_L1Norm_.py",
+      "sha256": "02d29f98ba28001a4274fe713bf0b985ffc088aef1e83581ad11e4dbe239dfda",
+      "sampling_rank_sha256": "102c5b271e728835309e4ec4efdd7da09bcaa703f89ffdc8c292342f646dfcdf"
+    },
+    {
+      "id": "L1_005",
+      "level": 1,
+      "problem_id": 5,
+      "filename": "5_Matrix_scalar_multiplication.py",
+      "relative_path": "level1/5_Matrix_scalar_multiplication.py",
+      "sha256": "f4d52425a8f72b4b22375494064f2ab1675e2caf29376c47a102211ce66d6987",
+      "sampling_rank_sha256": "1634360c5da6bcbfc771525f11551ade270f1eb39a98d57ddb13ece7f0513131"
+    },
+    {
+      "id": "L1_002",
+      "level": 1,
+      "problem_id": 2,
+      "filename": "2_Standard_matrix_multiplication_.py",
+      "relative_path": "level1/2_Standard_matrix_multiplication_.py",
+      "sha256": "136a33c4d598d07cd7931ef8c0eff4e683c221af6fc43c2d89b6632d3f9902a0",
+      "sampling_rank_sha256": "1691f2ae8c5defb86b1cd5a146c0d607e737083329c7296a22a8f9c218d55f11"
+    },
+    {
+      "id": "L1_048",
+      "level": 1,
+      "problem_id": 48,
+      "filename": "48_Mean_reduction_over_a_dimension.py",
+      "relative_path": "level1/48_Mean_reduction_over_a_dimension.py",
+      "sha256": "5fedf7c91096731d6d0edf00ade5b31b835c07e39be159512446fb4479fd5b35",
+      "sampling_rank_sha256": "16d30b99164ae3f0e92429b7f98774198456b302e6500a060253bf14ef6575cc"
+    },
+    {
+      "id": "L1_042",
+      "level": 1,
+      "problem_id": 42,
+      "filename": "42_Max_Pooling_2D.py",
+      "relative_path": "level1/42_Max_Pooling_2D.py",
+      "sha256": "615a5a6d6baa0d13774cc17b305dd0588625e13a829bdef16395f5cd101e06bc",
+      "sampling_rank_sha256": "18e3c16a68bd5d7472049407213640e73d69dc8e65819fc9810db657de65b28f"
+    },
+    {
+      "id": "L2_070",
+      "level": 2,
+      "problem_id": 70,
+      "filename": "70_Gemm_Sigmoid_Scaling_ResidualAdd.py",
+      "relative_path": "level2/70_Gemm_Sigmoid_Scaling_ResidualAdd.py",
+      "sha256": "a1544425f96477bad2814578d9ba2d928568d952527af98bd6acbbd0c2170fbc",
+      "sampling_rank_sha256": "012f77ab566423a363fb489cddbd9b471d5e22411ff230758d5bb6726fe07cc3"
+    },
+    {
+      "id": "L2_074",
+      "level": 2,
+      "problem_id": 74,
+      "filename": "74_ConvTranspose3d_LeakyReLU_Multiply_LeakyReLU_Max.py",
+      "relative_path": "level2/74_ConvTranspose3d_LeakyReLU_Multiply_LeakyReLU_Max.py",
+      "sha256": "7d05e9bcc2a444487b190089498e25fdcfd236ea00b844a5459ac13ce8121833",
+      "sampling_rank_sha256": "02c0b5b94ca75572f7472bf63b96c54a060061b945e60f4878cebe2f22244330"
+    },
+    {
+      "id": "L2_012",
+      "level": 2,
+      "problem_id": 12,
+      "filename": "12_Gemm_Multiply_LeakyReLU.py",
+      "relative_path": "level2/12_Gemm_Multiply_LeakyReLU.py",
+      "sha256": "0150537a4e53a29b1436d22667aa05b26c30301dd865d5ccf0f929b2c0cc29f6",
+      "sampling_rank_sha256": "066ec2214278d2a64661da37abfb46cf33055923ceeac5535707dacc6ace756a"
+    },
+    {
+      "id": "L2_025",
+      "level": 2,
+      "problem_id": 25,
+      "filename": "25_Conv2d_Min_Tanh_Tanh.py",
+      "relative_path": "level2/25_Conv2d_Min_Tanh_Tanh.py",
+      "sha256": "15e3e645a6012d772f1197e988d8a0ea4f191ad2459229fecdbe3f1d9ae344b3",
+      "sampling_rank_sha256": "0ab27f18c12c2ff45624a123ba1d23ea7c2e35436409de0fcdc0781779ec4a33"
+    },
+    {
+      "id": "L2_080",
+      "level": 2,
+      "problem_id": 80,
+      "filename": "80_Gemm_Max_Subtract_GELU.py",
+      "relative_path": "level2/80_Gemm_Max_Subtract_GELU.py",
+      "sha256": "44dff2e3c3e9b014df3f41f40e3678aa17830ecc7b161d2f142f556f87ee134c",
+      "sampling_rank_sha256": "0d5cad0def35c2b2651bf975d505521e655e0b9660cf95cc3211568a82a4dd31"
+    },
+    {
+      "id": "L2_085",
+      "level": 2,
+      "problem_id": 85,
+      "filename": "85_Conv2d_GroupNorm_Scale_MaxPool_Clamp.py",
+      "relative_path": "level2/85_Conv2d_GroupNorm_Scale_MaxPool_Clamp.py",
+      "sha256": "ba63b5b156a347f2f92a607c4a612e2bb1963dbcb9e7f04b3e4f0cb4a294fff3",
+      "sampling_rank_sha256": "0e6e087053a13e7a49f72eaae8cbcea7dda5fe93713002d517678c190d40685a"
+    },
+    {
+      "id": "L2_066",
+      "level": 2,
+      "problem_id": 66,
+      "filename": "66_Matmul_Dropout_Softmax.py",
+      "relative_path": "level2/66_Matmul_Dropout_Softmax.py",
+      "sha256": "7a8bcefb75586bbf0acfcdeb0e8391c8881548fe9b55844c0033a96e9f898a29",
+      "sampling_rank_sha256": "115ad963a73c6104a6c099c96cab75f7db5d4c65126d8ce3fb3d489fdfbfb7f7"
+    },
+    {
+      "id": "L2_030",
+      "level": 2,
+      "problem_id": 30,
+      "filename": "30_Gemm_GroupNorm_Hardtanh.py",
+      "relative_path": "level2/30_Gemm_GroupNorm_Hardtanh.py",
+      "sha256": "461335ed064d25b193afd8cee6645eb12b37540ce15baa5170f3d61b765d2a90",
+      "sampling_rank_sha256": "11cc8a58b21d6b844321d21543d2213526f92e74c31975f6b141d1311a768b03"
+    },
+    {
+      "id": "L2_014",
+      "level": 2,
+      "problem_id": 14,
+      "filename": "14_Gemm_Divide_Sum_Scaling.py",
+      "relative_path": "level2/14_Gemm_Divide_Sum_Scaling.py",
+      "sha256": "8bd6a36d6dafc8916d9b47d413f668fb7a4c25444378717a4c09f495b3891cd2",
+      "sampling_rank_sha256": "131b643fce341039ac0ee91d84cbd715eb03a4398ae013ef0ab350029c60eeea"
+    },
+    {
+      "id": "L2_019",
+      "level": 2,
+      "problem_id": 19,
+      "filename": "19_ConvTranspose2d_GELU_GroupNorm.py",
+      "relative_path": "level2/19_ConvTranspose2d_GELU_GroupNorm.py",
+      "sha256": "b7b68e7498c80dfe9491981ef97feb07aa684ce7229943d2cc701fdb83fb509c",
+      "sampling_rank_sha256": "18f0e11f29e4ef9831c59f2d9ae41d87bd2ef064f24b658979fbac53ab41fe80"
+    },
+    {
+      "id": "L2_029",
+      "level": 2,
+      "problem_id": 29,
+      "filename": "29_Matmul_Mish_Mish.py",
+      "relative_path": "level2/29_Matmul_Mish_Mish.py",
+      "sha256": "f7b1c4c4c90d56de3dbd3605ed285d3e68efe5f6d98a245417533371c692b3ec",
+      "sampling_rank_sha256": "1a47977bd97de9e8f466c5d8eb0bf91d5eac7f6a9346d88016571db4fe70f041"
+    },
+    {
+      "id": "L2_096",
+      "level": 2,
+      "problem_id": 96,
+      "filename": "96_ConvTranspose3d_Multiply_Max_GlobalAvgPool_Clamp.py",
+      "relative_path": "level2/96_ConvTranspose3d_Multiply_Max_GlobalAvgPool_Clamp.py",
+      "sha256": "164edd0135adff496adade63a772074630ebf2c13feaa450307d98a9728da2e6",
+      "sampling_rank_sha256": "1d45f4184e624fbd49bc24c77029d002956acbf26bbfee53272122b538fce397"
+    }
+  ]
+}
