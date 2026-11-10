@@ -1,19 +1,28 @@
-# Optimization workflow
+# Optimization loop
 
-Select a permitted [backend](backend-selection.md) and establish its actual build/link/run prerequisites before searching kernel variants. For GEMM/convolution, use the concrete dataflow and algorithm choices in [dense compute](dense-compute.md).
+Run this loop per kernel family on each target device.
 
-1. **Contract:** write the mathematical operation, dtype/layout/shape domain and numerical tolerance. Identify the deployment latency or throughput objective.
-2. **Environment:** select one device, record compiler/runtime/driver and inspect concurrent activity. In a managed runner, use supplied qualification and execution commands. Start a unique evidence directory. Use a cooperative lock and inspect unrelated GPU workloads.
-3. **Baseline:** execute an independent reference and the best correct permitted implementation. For standard dense work, start with a qualified native-library control when available. Otherwise establish a portable baseline. Preserve source and build identities.
-4. **Diagnosis:** measure the complete path, then profile the suspected stage when access permits. Record unavailable profiling and unverified explanations. Treat microbenchmarks as empirical comparisons. Specification estimates need exact product, precision, dense/sparse convention, units and source, labelled theoretical.
-5. **Hypothesis:** predict what one change should improve and which resource it may worsen. Candidate dimensions include tile sizes, subgroup sizes, SLM, GRF, load layout, fusion and matrix instructions.
-6. **Correctness:** validate every candidate on the declared domain before timing. Include tails, repeated calls and exceptional values as specified in [testing](testing.md).
-7. **Measurement:** interleave control and candidate, retain raw samples, distinguish device time from wall latency and match the intended cache regime. Use fresh runs to confirm a selected winner so search noise does not become a tuning result.
-8. **Integration:** when adding dispatch, gate supported features and shape/layout cases, then test the actual branch and fallback. Include packing, workspace and transfers in application measurements.
-9. **Evidence:** record passing, failing and skipped paths separately. Report the selected product and software stack. Do not promote a kernel merely because it is faster on a different device.
+1. **Baseline.** Have the reference passing and the best correct control in hand. For standard dense work, that control is oneMKL or oneDNN ([backend selection](backend-selection.md)). Otherwise it is the portable port.
+2. **Headroom before effort.** Write down work, bytes, intensity and the time floor `T_lower` on this device ([analysis](analysis.md)). For a chain of operations, compare unfused bytes with the fused floor ([fusion](fusion.md)). Every later decision compares a measured time with `T_lower`.
+3. **Diagnose.** Measure the whole path, then profile the slow stage if a profiler is available (`unitrace`, VTune). Inspect the compiler's spill and private-memory reports. Write down unverified explanations as hypotheses.
+4. **One hypothesis per variant.** Predict what the change improves and what it may cost (registers, occupancy, local memory).
+5. **Check, then time.** Every variant passes the reference on the full case list before any timing.
+6. **Time.** Interleave control and candidate, keep raw samples, and confirm the winner in a fresh run ([performance](performance.md)).
+7. **Integrate.** Add the variant behind capability and shape gates, test the dispatched branch and the fallback, and re-measure in the caller (packing, workspace, transfers included).
+8. **Re-profile.** The bottleneck moves after a win.
+9. **Continue or stop.** Stop when the best correct variant is within about 1.3x of `T_lower`, or when no attempts remain. Otherwise spend the next attempt on the next hypothesis.
+   - A failed variant is a diagnosis, not a reason to retreat. `OUT_OF_RESOURCES` means shrink the SLM tile or work-group; spills mean change the tiling.
+10. **Record.** Store passing, failing and skipped variants, with the device and stack, beside the code, not in this skill.
 
-## Source and evidence separation
+## Where to look first
 
-The reusable skill contains methods and verified specifications. Keep all measurements and local execution-status claims outside the shared skill. Product specifications need a source and exact SKU, datatype and convention. A measured value belongs in a device-specific run record under `validation/` or an external project results directory.
+| Symptom | Try | Confirm with |
+|---|---|---|
+| Far below the read-pattern ceiling | coalesce, vectorize legal loads, fewer load messages per byte | probe of the new pattern, compiler output |
+| Private-memory spills | smaller per-lane state, different tiling, `grf_size<256>` | spill report, then timing |
+| Many short kernels | fuse where a dependency or memory round trip disappears; graph replay for submission cost | end-to-end timing including setup |
+| Dot-product bound | `joint_matrix` (DPAS) tile, or oneMKL/oneDNN | matrix combinations, packing cost, shape sweep |
+| Poor sub-group utilization | change rows per sub-group or sub-group width | per-shape timings, collective correctness |
+| Local-memory staging stalls | change layout or buffering, or remove staging (2D loads on Xe2/Xe3P) | barrier count, tail tests |
 
-For each target, run discovery and baseline correctness first, then capability probes, candidate correctness and controlled measurement. Do not carry another product’s timing thresholds, best variants or tuning tables to that hardware as defaults. Public reference projects are indexed in [sources](sources.md); upstream claims do not establish local execution evidence.
+A load-only probe changes the instruction mix: it bounds a pattern, it does not prove a kernel optimal. A speedup on one product is a candidate on another, not a default.
