@@ -126,26 +126,22 @@ benchmarks/xe-skill-pilot/dev_compare.py TASK ...
 
 ## Xe3P: details still needed
 
-No Xe3P hardware has been available. The skill states Xe3P values from Intel documentation and driver sources.
+The values in [`xe3p.md`](xe3p.md) have been checked on a D270 (oneAPI 2026.1, compute runtime 26.44.40863) where the stack allows;
+each row says which. Still to obtain, in priority order:
 
-**Where to put new details:** [`xe3p.md`](xe3p.md) is the single file for Xe3P. Each row has the value in use, its source, its status and the check that confirms it. Add each value there; I will carry it into the skill pages named in the row.
+1. **512-register kernels:** oneAPI 2026.1 rejects `grf_size<512>`; check the default GRF ceiling and the threads per vector engine at
+   512 with a compiler that accepts it. (128 and 256 give 8 threads per vector engine.)
+2. **DPAS:**
+   - systolic depth: the depth-8 instruction runs; whether the array is 16 deep;
+   - what `matrix_combinations` reports on 2026.2+ (2026.1 reports none: the matrix aspect is 0);
+   - fp8 and e2m1, block-scaled DPAS with group-32 E8M0 scales, and whether NVFP4 (group-16 E4M3 scales) has a native path.
+3. **Peak rates for the D270 SKU:** FP32 vector, FP16/BF16 XMX, FP8, INT8 and FP64, and the memory bandwidth (the clock range is
+   400–2500 MHz).
+4. **2D block loads:** the Xe3P-only widths (transposed 32-bit width 16, 64-bit) and the prefetch limits. Reads outside the surface
+   return zero.
+5. **Toolchain:** the oneAPI version that names `intel_gpu_cri` (2026.1 does not), and oneMKL/oneDNN coverage.
 
-**Values to obtain or confirm,** in priority order:
-
-1. **Threads per vector engine at 256 GRF:** 4 or 8. The compiler and runtime disagree. Also whether the default GRF ceiling is 512.
-2. **SLM per work-group:** 384 KB (runtime) versus 512 KB L1+SLM per Xe-core.
-3. **DPAS:**
-   - systolic depth: 8 or 16;
-   - supported types and shapes, as `matrix_combinations` reports them;
-   - fp8 and e2m1 support;
-   - block-scaled DPAS with group-32 E8M0 scales;
-   - whether NVFP4 (group-16 E4M3 scales) has a native path.
-4. **Peak rates for the D270 SKU:** FP32 vector, FP16/BF16 XMX, FP8, INT8 and FP64, plus memory bandwidth, L2 size and clock.
-5. **2D block loads:** the transpose and prefetch limits, and whether reads outside the surface return zero.
-6. **Toolchain:** the oneAPI version that names `intel_gpu_cri`, and oneMKL/oneDNN coverage.
-7. **Behavior:** ESIMD differences from Xe2, and early-silicon fault patterns.
-
-With a D270 available, run the commands at the top of `xe3p.md`; they answer most of these directly.
+With a D270, run the commands at the top of `xe3p.md`.
 
 ## Repository layout
 
