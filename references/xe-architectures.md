@@ -14,16 +14,16 @@ Query the device (`xe_probe --capabilities`) and trust it over this table.
 | AOT `-device` | `acm-g10` (alias `dg2`) | `bmg`, `bmg-g31`, `lnl-m` | `ptl-h`, `ptl-u` | `cri` (also `xe3p-xpc`) |
 | Sub-group sizes | 8, 16, 32 | 16, 32 | 16, 32 | 16, 32; native SIMD32 for all shaders |
 | GRF register size | 32 B | 64 B | 64 B | 64 B |
-| GRF counts → threads per vector engine | 128→8, 256→4 | 128→8, 256→4 | 32–96→10, 128→8, 160→6, 192→5, 256→4 (automatic) | 32–192→8, 256→4, 512→4; default ceiling 512 |
+| GRF counts → threads per vector engine | 128→8, 256→4 | 128→8, 256→4 | 32–96→10, 128→8, 160→6, 192→5, 256→4 (automatic) | 128→8, 256→8; 512 needs a compiler that accepts `grf_size<512>` |
 | SLM per Xe-core = max per work-group | 64 KB | 128 KB | 128 KB | 384 KB |
 | L1 + SLM per Xe-core / L2 | 192 KB / 16 MB (A770) | 256 KB / 18 MB (B580) | 256 KB / up to 16 MB | 512 KB / 32 MB |
-| Max work-group | query | 1024 | query | up to 2048 |
-| XMX (DPAS) width | SIMD8, N = 8 | SIMD16, N = 16 | SIMD16, N = 16 | SIMD16, N = 16; Intel describes a 16-deep systolic array |
+| Max work-group | query | 1024 | query | 1024 |
+| XMX (DPAS) width | SIMD8, N = 8 | SIMD16, N = 16 | SIMD16, N = 16 | SIMD16, N = 16; the exposed instruction has depth 8 |
 | DPAS input types | int8/uint8, int4, int2, fp16, bf16 | the DG2 set plus tf32 | as Xe2 | Xe2 types plus fp8 (E4M3, E5M2), e2m1 (fp4), block-scaled `bdpas` (M = 8); int8 × int4 dropped (sycl-tla) |
-| `joint_matrix` combos at runtime | int8 M≤8×8×32, fp16/bf16 M≤8×8×16 | int8 M≤8×16×32; fp16/bf16 M≤8×16×16 plus 16×16×16, 1/32×64×16/32 | as Xe2 | as Xe2 plus new types |
-| 2D block loads | none | yes; outside the surface reads zero | yes | yes; wider transposes (32-bit width ≤ 16), 256-byte prefetch rows |
-| FP64 | no native FP64 (emulation flag) | yes; `aspect::fp64` = 1 | yes | yes; Intel describes full-rate FP64 |
-| Reported compute units | XVE count | 256 (B70) | query | query |
+| `joint_matrix` combos at runtime | int8 M≤8×8×32, fp16/bf16 M≤8×8×16 | int8 M≤8×16×32; fp16/bf16 M≤8×16×16 plus 16×16×16, 1/32×64×16/32 | as Xe2 | none on oneAPI 2026.1 (matrix aspect 0); DPAS runs through ESIMD `xmx::dpas` |
+| 2D block loads | none | yes; outside the surface reads zero | yes | yes; outside the surface reads zero; wider transposes (32-bit width ≤ 16), 256-byte prefetch rows |
+| FP64 | no native FP64 (emulation flag) | yes; `aspect::fp64` = 1 | yes | yes; `aspect::fp64` = 1 |
+| Reported compute units | XVE count | 256 (B70) | query | 256 (vector engines, not Xe-cores) |
 
 Matrix support depends on the software stack as well as the hardware. On Xe2, oneAPI 2025.3 exposes no matrix combinations and 2026.1 exposes the ones above. IGC lists tf32 DPAS for Xe2, but the B70 runtime query shows no tf32 combination. Trust the runtime query. If an expected combination is missing, try a newer stack before concluding the hardware lacks it.
 
@@ -49,11 +49,13 @@ Matrix support depends on the software stack as well as the hardware. On Xe2, on
 - `xe_generation` reports Xe3 separately from Xe3P.
 
 **Xe3P (D270).**
-- **Same surface as Xe2, with more of everything:** 384 KB of SLM per work-group, register file per Xe-core doubled to 1 MB, a 512-GRF ceiling by default, and work-groups up to 2048.
+- **Same surface as Xe2, with more of everything:** 384 KB of SLM per work-group, 32 MB L2, and a register file per Xe-core doubled to 1 MB. Work-groups stay at 1024.
 - **New DPAS types:** fp8 and fp4, plus block scaling. sycl-tla exposes them under `SYCL_INTEL_TARGET == 35` ([production patterns](production-patterns.md)).
-- **Thread-count conflict.** At 256 GRF, the runtime and the compiler disagree on threads per vector engine (8 versus 4). Measure occupancy rather than computing it.
+- **Matrix engine on oneAPI 2026.1.** `joint_matrix` offers no combination, so a `joint_matrix` path falls back to the portable one. bf16, fp16 and int8 DPAS run through ESIMD `xmx::dpas` (repeat count ≤ 8, sub-group 16, N = 16) in kernels built for `cri`.
+- **Registers.** `grf_size<128>` and `grf_size<256>` both keep 8 threads per vector engine, so 256 registers cost no occupancy. oneAPI 2026.1 rejects `grf_size<512>` with a static assertion.
 - **Naming the architecture.** oneAPI releases before 2026.2 cannot name it, so `xe_generation` below returns Unknown on them. Add a device-id check (`0x674C`–`0x6751`, via `aspect::ext_intel_device_id`) and keep every capability gate.
-- **ESIMD.** Paths that run on Battlemage may not run here. Treat Xe3P as early silicon and apply the fault protocol in [kernel rules](kernel-rules.md).
+- **ESIMD.** `xmx::dpas`, SLM block loads and stores, `block_load`, gathers and barriers run when built for `cri`. Treat other ESIMD features as untested.
+- **Driver.** Use the newest compute runtime available. Treat Xe3P as early silicon and apply the fault protocol in [kernel rules](kernel-rules.md).
 
 **Building for several generations.** Each detection and XMX instantiation compiles ahead of time for its own target: `acm-g10` with `bf16_gemm<8, 8, 16, 8>`, and `bmg`, `ptl-u` and `cri` with `bf16_gemm<8, 16, 16, 16>` (oneAPI 2025.3). A kernel that requires sub-group 8 breaks AOT builds for Xe2 and later. Split per-generation kernels into separate AOT targets or translation units, or ship SPIR-V (JIT) for the variant that only one generation can run.
 
