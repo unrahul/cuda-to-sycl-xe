@@ -87,6 +87,16 @@ SYCLomatic (dpct) output can save typing, but it is an automated, syntax-level t
   Redesign these with the idiom map.
 - **Generation gates.** Ports often gate their XMX paths to Xe2 only, with no Xe3P entry, so new hardware silently takes the slow path. Detect generations as in [architectures](xe-architectures.md).
 
+### Optional: SYCLomatic as a first draft
+
+It pays off on large, multi-file CUDA trees where host code dominates: streams, events, allocations, launches and `__shared__` arrays become a draft that builds. For one kernel you will redesign anyway, skip it.
+
+- **Run.** `c2s --in-root=<src> --out-root=<draft> --assume-nd-range-dim=1 <files>`. Without a CUDA toolkit installed, pass `--cuda-include-path`. The dimension hint avoids 3D `nd_item` code for 1D launches.
+- **Read every `DPCT1xxx` comment.** Each one marks a guess, such as a work-group size that may exceed the device limit.
+- **Remove the helper dependency.** Replace `dpct::` calls and `<dpct/dpct.hpp>` with plain SYCL so the code builds without the migration tool. Do not switch to `--use-syclcompat`: syclcompat is deprecated.
+- **Name every kernel.** Generated lambdas are unnamed, which breaks PyTorch builds ([PyTorch integration](pytorch-xpu.md), rule 2).
+- **Then port the hot kernels by hand.** The draft keeps CUDA's warp-32 structure and uses no DPAS, 2D block loads or large GRF. Take each hot kernel through the analysis and the idiom map above.
+
 ## Build settings that CUDA parity needs
 
 - **Division.** Device FP32 division is not correctly rounded by default: roughly 30% of quotients differ from IEEE division, and `-fp-model=precise` does not change that. `-foffload-fp32-prec-div`, or the AOT backend option `-cl-fp32-correctly-rounded-divide-sqrt`, makes division correctly rounded. CUDA divides with correct rounding by default.
