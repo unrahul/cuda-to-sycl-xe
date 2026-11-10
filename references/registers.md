@@ -7,11 +7,11 @@ The general register file (GRF) is the fastest storage in the GPU and the most c
 | GRF mode → threads per vector engine | Xe-HPG | Xe2 | Xe3 (Panther Lake) | Xe3P (CRI) |
 |---|---|---|---|---|
 | Register size | 32 B | 64 B | 64 B | 64 B |
-| Default | 128 → 8 | 128 → 8 | 128 → 8 | up to 192 → 8 |
-| Large | 256 → 4 | 256 → 4 | 160 → 6, 192 → 5, 256 → 4 | 256 → 4, 512 → 4 |
+| Default | 128 → 8 | 128 → 8 | 128 → 8 | 128 → 8 |
+| Large | 256 → 4 | 256 → 4 | 160 → 6, 192 → 5, 256 → 4 | 256 → 8; 512 (newer compiler) |
 | Small (more threads) | | | 32–96 → 10 | |
 
-Xe3's variable registers per thread make occupancy a gradual function of register use: staying at 96 GRFs or fewer gives 10 threads. Xe3P's register file per Xe-core doubles to 1 MB, which is why 512 registers per thread keeps 4 threads.
+Xe3's variable registers per thread make occupancy a gradual function of register use: staying at 96 GRFs or fewer gives 10 threads. Xe3P's register file per Xe-core doubles to 1 MB, so 256 registers per thread still keep 8 threads: request large GRF freely there.
 
 Bytes of GRF per work-item = registers × register size / sub-group size. Three ways to get more per work-item:
 
@@ -42,7 +42,7 @@ The compiler may also pick SIMD32 or SIMD16 on its own (unitrace showed SIMD32 f
    - A run-time index into a private array (`a[idx]`), or into an array of pointers in a kernel argument, forces it into memory. Use compile-time indices (`#pragma unroll` over the array), selects, or local memory.
    - `sycl::select_from_group` or shuffle with a lane pattern unknown at compile time compiles to indirect register access. Broadcasts and butterflies with compile-time masks are cheap. That change alone can gain 2–5x per kernel.
 2. **Large GRF.** Ways to request it:
-   - per kernel: the `grf_size<256>` property ([kernel rules](kernel-rules.md) has the snippet). The extension spec lists PVC and DG2 (128/256) and CRI (128/256/512). It is also accepted for BMG;
+   - per kernel: the `grf_size<256>` property ([kernel rules](kernel-rules.md) has the snippet). The extension spec lists PVC and DG2 (128/256) and CRI (128/256/512), but oneAPI 2026.1 accepts only 128 and 256. It is also accepted for BMG;
    - automatic per kernel: `grf_size_automatic`, also accepted for BMG;
    - whole build: `-Xsycl-target-backend=spir64_gen "-device bmg -options -ze-opt-large-register-file"`;
    - compiler-chosen per kernel for the whole build: `-options -ze-intel-enable-auto-large-GRF-mode`.
