@@ -97,17 +97,18 @@ Every code block in the references is compiled and run by `tests/snippets_test.c
 | L1_002 matmul | **1.21x** | 1.18x |
 | L1_005 matrix-scalar multiply | **2.70x** | none |
 | L1_021 sigmoid | **2.70x** | none |
-| L1_038 L1 normalization | pending | pending |
+| L1_038 L1 normalization | **2.53x** | none |
 
-**Totals over the 15 finished tasks:**
+**Totals over all 16 tasks:**
 
 | | Skill | Control |
 |---|---|---|
-| Correct | 12 | 6 |
-| Faster than baseline | 9 | 5 |
-| Failed builds | 2 | 22 |
-| Incorrect assessments | 22 | 64 |
-| Better arm (2 ties) | 10 tasks | 3 tasks |
+| Correct | 13 | 6 |
+| Faster than baseline | 10 | 5 |
+| Failed builds | 2 | 24 |
+| Incorrect assessments | 22 | 70 |
+| Geomean speedup of correct results | 1.55x | 1.05x |
+| Better arm (2 ties) | 11 tasks | 3 tasks |
 
 **Before the rewrite.** In a 6-task Haiku pilot (5 correct per arm, $5.00 versus $3.48), the previous version showed no benefit.
 
