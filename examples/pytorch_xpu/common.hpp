@@ -7,11 +7,13 @@
 inline void check_tensor(const at::Tensor& x) {
   TORCH_CHECK(x.is_xpu() && x.scalar_type() == at::kFloat && x.is_contiguous(),
               "expected a contiguous FP32 XPU tensor");
-  TORCH_CHECK(!x.requires_grad(), "example has no autograd implementation");
+  // Parameters usually have requires_grad=True and callers may run with grad enabled:
+  // accept them. These ops are forward-only, so their outputs carry no autograd history.
 }
 
 inline sycl::queue& current_queue(const at::Tensor& x) {
-  auto& q = c10::xpu::getCurrentXPUStream(x.get_device()).queue();
+  auto stream = c10::xpu::getCurrentXPUStream(x.get_device());  // a handle, returned by value
+  sycl::queue& q = stream.queue();  // the queue is owned by PyTorch's stream pool
   TORCH_CHECK(q.is_in_order(), "example requires an in-order framework queue");
   TORCH_CHECK(q.get_device().has(sycl::aspect::usm_device_allocations),
               "device USM is required");

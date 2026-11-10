@@ -54,19 +54,19 @@ def main():
         expected = reference(a, b)
         # Producers, extension calls and consumers all run on a non-default stream.
         with torch.xpu.stream(stream):
-            # Detach inference parameters explicitly; this example has no backward.
-            x = torch.nn.Parameter(a.to(device).clone()).detach()
-            inputs = [x] if b is None else [x, torch.nn.Parameter(b.to(device).clone()).detach()]
+            # Real nn.Parameters (requires_grad=True), passed as a model's forward would pass them.
+            x = torch.nn.Parameter(a.to(device).clone())
+            inputs = [x] if b is None else [x, torch.nn.Parameter(b.to(device).clone())]
             first = extension.run(*inputs)
             second = extension.run(*inputs)
             consumed = second * 3.0 - 2.0
-            temporary = extension.run(*[t.clone() for t in inputs])
+            temporary = extension.run(*[t.detach().clone() for t in inputs])
         stream.synchronize()
         for result in (first, second, temporary):
             max_error = max(max_error, check(result, expected))
         check(consumed, expected * 3 - 2)
         for original, candidate in zip([a] if b is None else [a, b], inputs):
-            assert torch.equal(original, candidate.cpu()), "input changed"
+            assert torch.equal(original, candidate.detach().cpu()), "input changed"
     print(f"PASS {args.backend}: nondefault stream, FP64 reference, retained outputs, "
           f"temporary inputs, unchanged inputs; max_abs_error={max_error:.9g}")
 
