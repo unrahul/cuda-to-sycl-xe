@@ -1,41 +1,45 @@
-# Performance measurement and acceptance
+# Measuring performance
 
-Use the operation's mathematical work and a stated timing boundary. Record precision, shape, layout, cache regime, device PCI identity, driver/runtime/compiler, build flags and baseline/candidate source hashes. Keep raw repeated samples. A cooperative GPU lock excludes only other jobs using that lock. Inspect other device activity before asserting an uncontended run.
+## What to time
+
+- **Device time**: a queue built with `property::queue::enable_profiling{}`, then `event.get_profiling_info<info::event_profiling::command_start / command_end>()`, or a barrier event before and after N repetitions on an in-order queue (`bench.hpp`).
+- **Caller latency**: host wall time to completion (`wait_and_throw()`), including allocation, packing, transfers and dispatch when the caller pays for them.
+
+Report them separately and never compare one against the other. Warm up first: JIT compilation, allocation and first-touch costs land in the first calls. Label results as cache-resident or streaming, and for streaming rotate over buffers larger than the reported cache.
+
+Record with every result: device name and PCI address, driver, compiler version and flags, dtype, layout, shape, cache regime, timing scope, and source hashes of baseline and candidate.
+
+Benchmark habits:
+
+- Flush or rotate more data than L2 between timed calls when measuring the streaming regime.
+- Launch a dummy large kernel first so the host has enqueued timing events before short kernels finish.
+- Take many repetitions and trim the extremes.
+- When comparing with a CUDA result, match its floating-point flags. `icpx` defaults to a fast floating-point model that contracts FMAs; `nvcc` does not use fast math by default.
+- Express each result as a percentage of the device's time floor ([analysis](analysis.md)), not only as a speedup over the baseline.
 
 ## Work and rate conventions
 
-| Operation | Work convention | Rate |
+| Operation | Work | Rate |
 |---|---|---|
-| Dense real GEMM C=A*B | `2*M*N*K` FLOPs, counting multiply and add as two operations; no beta/epilogue | GFLOP/s = FLOPs / (`elapsed_us * 1000`) |
-| Exact scalar dot work | `K` multiplies and `K-1` additions per dot | State this alternative explicitly if using it instead of the common GEMM convention |
-| Row sum | `rows*(columns-1)` mathematical additions | Report additions/s and bytes/s as appropriate; actual tree/padding work can differ |
-| Signed-int8 GEMM | `2*M*N*K` integer operations under a stated MAC convention | GOP/s or TOPS, with accumulator precision; never label these floating FLOPs |
-| Softmax or transcendental activation | Separate reductions, ordinary arithmetic, exponentials/divisions | Prefer latency and explicitly modeled effective bytes/s; an exponential is not one hardware FLOP |
+| Dense GEMM `C = A*B` | `2*M*N*K` FLOPs (multiply and add counted separately) | GFLOP/s = FLOPs / (µs × 1000) |
+| int8 GEMM | `2*M*N*K` integer ops | GOP/s or TOPS, with the accumulator type; not FLOPs |
+| Row reduction | `rows*(cols-1)` additions | additions/s, plus bytes/s |
+| Softmax, transcendental activations | not FLOP-meaningful | latency and effective bytes/s |
 
-For bytes/s, distinguish logical minimum input/output bytes from actual memory transactions. For softmax, one read plus one write is a minimum logical traffic convention, not a claim that a multi-pass implementation touches memory only twice. Packing and extra temporary buffers add work. Cache-resident effective bytes/s can exceed external-memory bandwidth. Use measured counters to discuss physical traffic.
+Effective bytes/s counts the logical minimum traffic (inputs read once, outputs written once). A cache-resident run can exceed DRAM bandwidth. Physical traffic needs hardware counters. A vendor peak is a citation (product, precision, dense or sparse), not a measurement.
 
-Report kernel/device-event latency separately from completion-bounded application latency. Include setup, packing, transfers, temporary workspace and dispatch when they belong to the deployment objective. Do not combine a device-only baseline with an end-to-end candidate. Derived throughput must use the same scope as its latency. Validate FLOP/byte formulas and unit conversions independently of the benchmark kernel.
+## Accepting a faster variant
 
-Measured rates are workload/stack results and stay in run evidence. Vendor peak specifications require a primary source, exact SKU, precision, dense/sparse convention and units. Do not call a measured rate a product specification or extrapolate throughput between products.
+Interleave baseline and candidate on the same device (ABBA order), keep raw samples, and confirm a winner with a fresh run rather than reusing the samples that selected it.
 
-## Candidate acceptance
+`scripts/accept_performance.py record.json --min-speedup 1.05` applies that policy. The record has a `discovery` and a `confirmation` phase. Each phase holds:
 
-`scripts/accept_performance.py record.json` validates two phases, `discovery` and `confirmation`. Each phase contains:
+- `run_id`, unique per phase;
+- `context`, identical across phases, with `device_pci`, `device_name`, `driver`, `runtime`, `compiler`, `build_flags`, `dtype`, `layout`, `shape`, `operation`, `cache_regime`, `timing_scope` (`device_event` or `end_to_end`), `baseline_sha256`, `candidate_sha256` (lowercase), `baseline_variant`, `candidate_variant`;
+- `correctness`: `{"baseline": "PASS", "candidate": "PASS"}`;
+- `warmup_complete`, `interleaved`, `uncontended`: booleans that the evidence supports;
+- `pairs`: at least 20 entries with distinct `sample_id`, `baseline_us`, `candidate_us`, and `order` alternating `AB`/`BA`.
 
-- `run_id`: distinct, nonempty evidence identity.
-- `context`: identical across phases, with `device_pci`, `device_name`, `driver`, `runtime`, `compiler`, `build_flags`, `dtype`, `layout`, `shape`, `operation`, `cache_regime`, `timing_scope`, `baseline_sha256`, `candidate_sha256`, `baseline_variant`, `candidate_variant`.
-- `correctness`: exactly `{"baseline":"PASS","candidate":"PASS"}`. Preserve detailed numerical test evidence outside the summary.
-- `warmup_complete`, `interleaved`, `uncontended`: true only when supported by the run evidence.
-- `pairs`: at least 20 objects with distinct `sample_id`, `baseline_us`, `candidate_us`, and alternating `order` values `AB` and `BA`.
+The tool accepts (exit 0) when the lower bound of a paired bootstrap interval of the median speedup exceeds the threshold in both phases. Exit 1 means the evidence is valid but the gain is too small; exit 2 means invalid evidence. Choose the threshold before tuning.
 
-`timing_scope` is `device_event` or `end_to_end`. Source hashes are lowercase SHA-256 values. Source/variant identities must differ; two entrypoints in one source may share a file hash but must have different variant identifiers. Sample identities cannot repeat between phases. Store the raw sample arrays directly, rather than replacing them with medians. Confirmation must come from a fresh measurement of the selected candidate, not renamed discovery samples.
-
-The gate requires the lower endpoint of a paired bootstrap median-speedup interval to exceed the requested threshold in both phases. `--min-speedup 1.05` selects a five-percent threshold; choose a threshold appropriate to the project before tuning. Exit 0 accepts, 1 rejects a valid but insufficient gain, and 2 reports invalid evidence. The tool reports the median and confidence lower bound for each phase.
-
-This gate checks records and applies one statistical policy. It cannot attest that a GPU was idle, an oracle was independent, a sample label is truthful or a process waited on every contributing queue. Keep provenance, logs, numerical results and current activity evidence for review. Bootstrap sampling does not remove thermal drift, correlated samples, multiple-comparison effects or a biased workload. Use separate holdout shapes when generalization matters.
-
-Only after acceptance should a scoped dispatch choice be generated. The legacy `make_table.py` formats summary CSV rows and provides no statistical or context gate. Unseen devices, stacks, layouts and shapes retain the portable baseline.
-
-## Activity-observation limits
-
-An empty process/utilization snapshot does not by itself establish uncontended execution. A short snapshot can miss jobs, and some driver/tool combinations do not expose active processes. Check that the observation method detects a known active workload on the selected device and covers the measurement interval. Preserve that positive-control evidence. Otherwise mark isolation unknown and keep the measured gains diagnostic, with promotion withheld. Do not set `uncontended: true` merely because a query exited zero and returned an empty list.
+The tool checks records, not truth. It cannot know whether the GPU was idle, the oracle was independent, or every queue was waited on. Do not mark `uncontended` true because a process list was empty: a short snapshot misses jobs, and a display GPU always has clients. Shared or display GPUs give valid correctness results but only indicative timings.
