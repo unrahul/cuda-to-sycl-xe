@@ -89,7 +89,8 @@ inline void load_tile_16x8(const unsigned* base, int cols, int rows, int pitch_e
   - block count 1, 2 or 4;
   - width and pitch at most 2^24 bytes;
   - stores at most 8 rows;
-  - transposed loads take 32- or 64-bit elements with width ≤ 8 on Xe2, and 32-bit width ≤ 16 on Xe3P.
+  - transposed loads take 32- or 64-bit elements with width ≤ 8 on Xe2, and 32-bit width ≤ 16 on Xe3P;
+  - pitch a multiple of 16 bytes: a matrix whose rows are 680 or 360 bytes needs a padded copy or a split layout.
 - **Companions.** `__spirv_Subgroup2DBlockLoadTransformINTEL` produces the VNNI layout for the DPAS B operand. `__spirv_Subgroup2DBlockPrefetchINTEL` takes the same arguments without a destination; issue it two or three K-steps ahead. `__spirv_Subgroup2DBlockStoreINTEL` stores.
 - **Older builtins.** The `__builtin_IB_subgroup_block_read_flat_*` builtins take width, height and pitch *minus one*.
 
